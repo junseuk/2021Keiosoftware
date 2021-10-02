@@ -5,7 +5,7 @@
 
 //HashTable
 struct bucket* hashTable = NULL;
-int SIZE = 10;
+int SIZE;
 //Binary Tree
 struct node* root = NULL;
 
@@ -133,26 +133,30 @@ void searchBinary(int value) {
 }
 
 void insert(int key, int value) {
-    //printf("insert function key: %d, value: %d\n", key, value);
     insertHash(key, value);
     insertBinary(key, value);
-    printf("insertion done!\n");
     return;
 }
 
 void search(int key) {
     int value = searchHash(key);
-    printf("the value is %d\n", value);
     searchBinary(value);
     return;
 }
 
 
 int main() {
-    hashTable = (struct bucket*) malloc(SIZE*sizeof(struct bucket));
     char buffer[1000];
     unsigned int numData;
     srand(time(0));
+    //SIZE of hash table
+    printf("Please decide the size of hash table: ");
+    fgets(buffer, sizeof(buffer), stdin);
+    sscanf(buffer, "%u", &SIZE);
+    assert(SIZE>0);
+    hashTable = (struct bucket*) malloc(SIZE*sizeof(struct bucket));
+
+    //Number of Data
     printf("Please input the number of data: ");
     fgets(buffer, sizeof(buffer), stdin);
     sscanf(buffer, "%u", &numData);
@@ -161,6 +165,8 @@ int main() {
         insert(i, randValue);
         printf("%d, %d\n", i, randValue);
     }
+    
+    //Key to search
     int key = 0;
     printf("Input the key to search: ");
     fgets(buffer, sizeof(buffer), stdin);
