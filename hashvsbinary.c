@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
 
 //HashTable
 struct bucket* hashTable = NULL;
@@ -66,7 +67,7 @@ void insertBinary(int key, int value) {
     while (p!=NULL) {
         parent = p;
         if (p -> value == value) {
-            printf("[ Binary Search ] Already existed value in the tree\n");
+            //printf("[ Binary Search ] Already existed value in the tree\n");
             return;
         }
         else if (value < p -> value) {
@@ -88,23 +89,25 @@ void insertBinary(int key, int value) {
 }
 
 
-void searchHash(int key) {
+int searchHash(int key) {
+    //printf("inside searchHash key: %d", key);
     int searchCount = 0;
     int hashIndex = hashFunction(key);
     struct node* node = hashTable[hashIndex].head;
     if (node == NULL) {
         printf("[ Hash Search ] NOT FOUND\n");
-        return;
+        return -1;
     }
     while(node != NULL) {
         searchCount++;
         if (node -> key == key) {
             printf("[  Hash Search  ] FOUND! Key: %d, Value: %d\n", key, node -> value);
             printf("[  Hash Search  ] Search Count: %d\n", searchCount);
-            break;
+            return node -> value;
         }
         node = node -> next;
-    }
+    };
+    return -1;
 }
 
 void searchBinary(int value) {
@@ -130,27 +133,39 @@ void searchBinary(int value) {
 }
 
 void insert(int key, int value) {
+    //printf("insert function key: %d, value: %d\n", key, value);
     insertHash(key, value);
     insertBinary(key, value);
+    printf("insertion done!\n");
     return;
 }
 
-void search(int key, int value) {
+void search(int key) {
+    int value = searchHash(key);
+    printf("the value is %d\n", value);
     searchBinary(value);
-    searchHash(key);
+    return;
 }
 
 
 int main() {
     hashTable = (struct bucket*) malloc(SIZE*sizeof(struct bucket));
-
-    insert(0,1);
-    insert(1, 10);
-    insert(11, 12);
-    insert(21, 13);
-    insert(3, 5);
-    insert(35, 4);
-    insert(51, 14);
-
-    search(0, 1);
+    char buffer[1000];
+    unsigned int numData;
+    srand(time(0));
+    printf("Please input the number of data: ");
+    fgets(buffer, sizeof(buffer), stdin);
+    sscanf(buffer, "%u", &numData);
+    for (int i=0;i<numData;i++) {
+        int randValue = rand();
+        insert(i, randValue);
+        printf("%d, %d\n", i, randValue);
+    }
+    int key = 0;
+    printf("Input the key to search: ");
+    fgets(buffer, sizeof(buffer), stdin);
+    sscanf(buffer, "%d", &key);
+    assert(key<numData);
+    assert(key>=0);
+    search(key);
 }
