@@ -47,16 +47,16 @@ NODE *
 insert_in_leaf(NODE *leaf, int key, DATA *data)
 {
 	int i;
-  //If a key is the Smallest, move each keys to the left
+  //If the key is the smallest
 	if (key < leaf->key[0]) {
 		for (i = leaf->nkey; i > 0; i--) {
 			leaf->chi[i] = leaf->chi[i-1];
 			leaf->key[i] = leaf->key[i-1];
-		} 
+		}
 		leaf->key[0] = key;
 		leaf->chi[0] = (NODE *)data;
 	}
-  //Find Position
+  //If the key should be in the middle or the end
 	else {
 		for (i = 0; i < leaf->nkey; i++) {
 			if (key < leaf->key[i]) break;
@@ -65,11 +65,11 @@ insert_in_leaf(NODE *leaf, int key, DATA *data)
 			leaf->chi[j] = leaf->chi[j-1] ;
 			leaf->key[j] = leaf->key[j-1] ;
 		} 
+    //#1 Assignment
+    leaf -> chi[i] = (NODE *) data;
+    leaf -> key[i] = key;
 	}
-  leaf -> chi[i] = (NODE *) data;
-  leaf -> key[i] = key;
-	leaf->nkey++;
-
+  leaf -> nkey++;
 	return leaf;
 }
 
@@ -101,7 +101,44 @@ insert(int key, DATA *data)
 		insert_in_leaf(leaf, key, data);
 	}
 	else { // split
-    printf("NEED TO SPLIT\n");
+    TEMP *tempNode;
+    if (!(tempNode = (TEMP *) calloc(1, sizeof(TEMP)))) ERR;
+    //Copy leaf to tempnode
+    for (int i = 0; i < N - 1; i++) {
+      tempNode -> chi[i] = leaf -> chi[i];
+      tempNode -> key[i] = leaf -> key[i];
+    }
+    tempNode -> isLeaf = leaf -> isLeaf;
+    tempNode -> nkey = leaf -> nkey;
+    tempNode -> chi[N] = leaf -> chi[N-1];
+    printf("COPYING LEAF\n");
+    printf("%d, %d, %d, %d\n", tempNode -> key[0], tempNode -> key[1], tempNode -> key[2], tempNode -> key[3]);
+    int i;
+    if (key < tempNode->key[0]) {
+      for (i = tempNode->nkey; i > 0; i--) {
+        tempNode->chi[i] = tempNode->chi[i-1];
+        tempNode->key[i] = tempNode->key[i-1];
+      }
+      tempNode->key[0] = key;
+      tempNode->chi[0] = (NODE *)data;
+    }
+    else {
+      for (i = 0; i < tempNode->nkey; i++) {
+        if (key < tempNode->key[i]) break;
+      }
+      for (int j = tempNode->nkey; j > i; j--) {	
+        printf("j: %d i: %d\n", j, i);
+        tempNode->chi[j] = tempNode->chi[j-1];
+        tempNode->key[j] = tempNode->key[j-1];
+      } 
+    }
+    tempNode -> chi[i] = (NODE *) data;
+    tempNode -> key[i] = key;
+    tempNode -> nkey++;
+    printf("NEW LEAF\n");
+    printf("%d, %d, %d, %d\n", tempNode -> key[0], tempNode -> key[1], tempNode -> key[2], tempNode -> key[3]);
+    NODE *right, *left;
+  
 	}
 }
 
