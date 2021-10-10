@@ -86,35 +86,74 @@ alloc_leaf(NODE *parent)
 	return node;
 }
 
+void insert_to_parent(NODE *parent, int key, NODE* left_child, NODE* right_child) {
+  if (parent == NULL) {
+    NODE *new_root = alloc_leaf(NULL);
+    new_root -> isLeaf = false;
+    parent = new_root;
+    Root = new_root;
+  }
+  int i;
+  //If the key is the smallest
+  if (key < parent ->key[0]) {
+    for (i = parent ->nkey; i > 0; i--) {
+      parent ->chi[i] = parent ->chi[i-1];
+      parent ->key[i] = parent ->key[i-1];
+    }
+    parent ->key[0] = key;
+    parent ->chi[0] = left_child;
+    parent ->chi[1] = right_child;
+  }
+  //If the key should be in the middle or the end
+  else {
+    for (i = 0; i < parent->nkey; i++) {
+      if (key < parent->key[i]) break;
+    }
+    for (int j = parent->nkey; j > i; j--) {		
+      parent->chi[j] = parent->chi[j-1] ;
+      parent->key[j] = parent->key[j-1] ;
+    } 
+    //#1 Assignment
+    parent -> chi[i] = left_child;
+    parent -> chi[i+1] = right_child;
+    parent -> key[i] = key;
+  }
+  parent -> nkey++;
+  return;
+}
+
 void split(TEMP *tempnode, NODE *original_node) {
   printf("SPLIT!\n");
-  NODE *new_node = if((NODE*) calloc(1, sizeof(NODE))) ERR;
+  NODE *new_node;
+  if (!(new_node = (NODE*) calloc(1, sizeof(NODE)))) ERR;
   int i;
   int j = 0;
   for (i = N/2; i < N ; i++) {
-      if (i == N - 1) {
-        new_node -> key[j] = tempnode -> key[i];
-        new_node -> chi[j] = tempnode ->chi[i];
-        new_node -> nkey++;
-      }
-      else {
-        //erase
-        original_node -> key[i] = 0;
-        original_node -> chi[i] = 0;
-        original_node -> nkey--;
-        //copy from tempnode
-        new_node -> key[j] = tempnode -> key[i];
-        new_node -> chi[j] = tempnode ->chi[i];
-        new_node -> nkey++;
-        j++;
-      }
+    if (i == N - 1) {
+      new_node -> key[j] = tempnode -> key[i];
+      new_node -> chi[j] = tempnode ->chi[i];
+      new_node -> nkey++;
     }
+    else {
+      //erase
+      original_node -> key[i] = 0;
+      original_node -> chi[i] = 0;
+      original_node -> nkey--;
+      //copy from tempnode
+      new_node -> key[j] = tempnode -> key[i];
+      new_node -> chi[j] = tempnode ->chi[i];
+      new_node -> nkey++;
+      j++;
+    }
+  }
 
   //change pointers in the end
   original_node -> chi[N-1] = new_node;
   new_node -> chi[N-1] = tempnode -> chi[N];
-  new_node -> parent = orignal_node -> parent;
+  new_node -> parent = original_node -> parent;
+  new_node -> isLeaf = true;
   free(tempnode);
+  insert_to_parent(original_node -> parent, new_node -> key[0], original_node, new_node);
   return;
 }
 
@@ -169,7 +208,8 @@ insert(int key, DATA *data)
     tempNode -> key[i] = key;
     tempNode -> chi[i] = (NODE *) data;
     tempNode -> nkey++;
-    split(tempNode);
+    split(tempNode, leaf);
+    printf("split is done!\n");
 	}
 }
 
@@ -193,7 +233,6 @@ interactive()
 int
 main(int argc, char *argv[])
 {
-  printf("%d," 3/2);
   struct timeval begin, end;
 
 	init_root();
