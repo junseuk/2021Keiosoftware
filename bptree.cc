@@ -30,6 +30,7 @@ print_tree(NODE *node)
 	printf("\n"); fflush(stdout);
 }
 
+
 NODE *
 find_leaf(NODE *node, int key)
 {
@@ -85,6 +86,39 @@ alloc_leaf(NODE *parent)
 	return node;
 }
 
+void split(TEMP *tempnode, NODE *original_node) {
+  printf("SPLIT!\n");
+  NODE *new_node = if((NODE*) calloc(1, sizeof(NODE))) ERR;
+  int i;
+  int j = 0;
+  for (i = N/2; i < N ; i++) {
+      if (i == N - 1) {
+        new_node -> key[j] = tempnode -> key[i];
+        new_node -> chi[j] = tempnode ->chi[i];
+        new_node -> nkey++;
+      }
+      else {
+        //erase
+        original_node -> key[i] = 0;
+        original_node -> chi[i] = 0;
+        original_node -> nkey--;
+        //copy from tempnode
+        new_node -> key[j] = tempnode -> key[i];
+        new_node -> chi[j] = tempnode ->chi[i];
+        new_node -> nkey++;
+        j++;
+      }
+    }
+
+  //change pointers in the end
+  original_node -> chi[N-1] = new_node;
+  new_node -> chi[N-1] = tempnode -> chi[N];
+  new_node -> parent = orignal_node -> parent;
+  free(tempnode);
+  return;
+}
+
+
 void 
 insert(int key, DATA *data)
 {
@@ -132,13 +166,10 @@ insert(int key, DATA *data)
         tempNode->key[j] = tempNode->key[j-1];
       } 
     }
-    tempNode -> chi[i] = (NODE *) data;
     tempNode -> key[i] = key;
+    tempNode -> chi[i] = (NODE *) data;
     tempNode -> nkey++;
-    printf("NEW LEAF\n");
-    printf("%d, %d, %d, %d\n", tempNode -> key[0], tempNode -> key[1], tempNode -> key[2], tempNode -> key[3]);
-    NODE *right, *left;
-  
+    split(tempNode);
 	}
 }
 
@@ -162,6 +193,7 @@ interactive()
 int
 main(int argc, char *argv[])
 {
+  printf("%d," 3/2);
   struct timeval begin, end;
 
 	init_root();
