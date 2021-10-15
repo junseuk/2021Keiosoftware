@@ -1,6 +1,7 @@
 {
     "files.associations": {
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "vector": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

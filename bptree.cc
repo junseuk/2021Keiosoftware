@@ -10,6 +10,20 @@ cur_time(void)
 	return t;
 }
 
+//Prototype
+void print_tree_core(NODE *n);
+void print_tree(NODE *node);
+NODE * find_leaf(NODE *node, int key);
+NODE * insert_in_leaf(NODE *leaf, int key, DATA *data);
+NODE * alloc_leaf(NODE *parent);
+void temp_split(TEMP *tempNode, NODE *leaf);
+TEMP* create_temp(NODE *leaf, int key, NODE *pointer);
+void insert_in_parent(NODE* left_child, int key, NODE* right_child);
+void split(TEMP *tempnode, NODE *original_node);
+void insert(int key, DATA *data);
+void init_root(void);
+int interactive();
+
 void
 print_tree_core(NODE *n)
 {
@@ -86,6 +100,46 @@ alloc_leaf(NODE *parent)
 	return node;
 }
 
+void
+temp_split(TEMP *tempNode, NODE *leaf)
+{
+  NODE *new_node;
+  if (!(new_node = (NODE *) calloc(1, sizeof(NODE)))) ERR;
+  //Erase all entries first
+  int i;
+  for (i = 0; i < N; i++) {
+    if (i != N -1) {
+      leaf -> key[i] = 0;
+      leaf -> nkey--;
+    }
+    leaf -> chi[i] = 0;
+  }
+  //Create left_child
+  for (i = 0; i < (N/2) + 1; i++) {
+    if (i != N/2) {
+      leaf -> key[i] = tempNode -> key[i];
+      leaf -> nkey++;
+    }
+    leaf -> chi[i] = tempNode -> chi[i];
+  }
+  //Create right_child
+  int j = 0;
+  for (i = (N/2) + 1; i < N + 1; i++) {
+    if (i != N) {
+      new_node -> key[j] = tempNode -> key[i];
+      new_node -> nkey++;
+    }
+    new_node -> chi[j] = tempNode -> chi[i];
+    j++;
+  }
+  int key = tempNode -> key[N/2];
+  new_node -> isLeaf = tempNode -> isLeaf;
+  new_node -> parent = leaf -> parent;
+  free(tempNode);
+  insert_in_parent(leaf, key, new_node);
+  return;
+}
+
 TEMP* 
 create_temp(NODE *leaf, int key, NODE *pointer) 
 {
@@ -98,7 +152,6 @@ create_temp(NODE *leaf, int key, NODE *pointer)
     tempNode -> chi[i] = leaf -> chi[i];
     tempNode -> key[i] = leaf -> key[i];
   }
-  tempNode -> chi[N-1] = leaf -> chi[N-1];
   //Search the position
   int i;
   if (key < tempNode->key[0]) {
@@ -120,6 +173,7 @@ create_temp(NODE *leaf, int key, NODE *pointer)
   }
   tempNode -> key[i] = key;
   tempNode -> chi[i] = pointer;
+  tempNode -> chi[N] = leaf -> chi[N-1];
   tempNode -> nkey++;
   return tempNode;
 }
@@ -170,18 +224,16 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
   }
   //If parent is full
   else {
-    TEMP *tempNode = create_temp(parent, key, right_child);
+    TEMP *tempNode = create_temp(parent, key, left_child);
     int i;
     //If the key is the smallest
     printf("stop");
     for (i = 0; i < N; i++) {
       if (left_child == parent -> chi[i]) break;
     }
-    tempNode -> chi[i] = left_child;
     tempNode -> chi[i+1] = right_child;
-    tempNode -> key[i] = key;
     printf("stop");
-    
+    temp_split(tempNode, parent);
     return;
   }
   return;
