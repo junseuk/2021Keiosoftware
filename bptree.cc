@@ -204,8 +204,8 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
     //If the key is the smallest
     if (key < parent -> key[0]) {
       for (i = parent -> nkey + 1; i > 0; i--) {
-        parent ->chi[i] = parent ->chi[i-1];
-        parent ->key[i] = parent ->key[i-1];
+        if (i != parent -> nkey + 1) parent -> key[i] = parent -> key[i-1];
+        parent -> chi[i] = parent -> chi[i-1];
       }
       //Connect left_child
       parent -> chi[0] = left_child;
@@ -328,27 +328,36 @@ main(int argc, char *argv[])
 
 	printf("-----Insert-----\n");
 	begin = cur_time();
-  // while (true) {
-  //   insert(interactive(), NULL);
-    insert(2, NULL);
-      print_tree(Root);
-    insert(3, NULL);
-      print_tree(Root);
-    insert(4, NULL);
-      print_tree(Root);
+  // insert(2, NULL);
+  // print_tree(Root);
+  // insert(3, NULL);
+  // print_tree(Root);
+  // insert(4, NULL);
+  // print_tree(Root);
 
-    insert(5, NULL);
-      print_tree(Root);
+  // insert(5, NULL);
+  // print_tree(Root);
 
-    insert(6, NULL);
-    print_tree(Root);
-    insert(10, NULL);
-    print_tree(Root);
-    insert(11, NULL);
-  //   test(5);
-  // }
+  // insert(6, NULL);
+  // print_tree(Root);
+  // insert(10, NULL);
+  // print_tree(Root);
+  // insert(11, NULL);
+  // insert(10, NULL);
+  // insert(9, NULL);
+  // insert(8, NULL);
+  // insert(7, NULL);
+  // insert(6, NULL);
+  // insert(5, NULL);
+  // insert(4, NULL);
+  // insert(3, NULL);
+  // insert(2, NULL);
+  // insert(1, NULL);
+
+  // test(5);
+  test(100000);
   //test(10);
-  print_tree(Root);
+  //print_tree(Root);
 	end = cur_time();
 
 	return 0;
