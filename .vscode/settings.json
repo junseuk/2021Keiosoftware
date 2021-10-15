@@ -1,7 +1,10 @@
 {
     "files.associations": {
         "stdlib.h": "c",
-        "vector": "cpp"
+        "vector": "cpp",
+        "functional": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

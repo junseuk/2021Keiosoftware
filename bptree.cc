@@ -23,6 +23,8 @@ void split(TEMP *tempnode, NODE *original_node);
 void insert(int key, DATA *data);
 void init_root(void);
 int interactive();
+int search(int key);
+void test(int num_data);
 
 void
 print_tree_core(NODE *n)
@@ -130,6 +132,7 @@ temp_split(TEMP *tempNode, NODE *leaf)
       new_node -> nkey++;
     }
     new_node -> chi[j] = tempNode -> chi[i];
+    tempNode -> chi[i] -> parent = new_node;
     j++;
   }
   int key = tempNode -> key[N/2];
@@ -181,9 +184,7 @@ create_temp(NODE *leaf, int key, NODE *pointer)
 void 
 insert_in_parent(NODE* left_child, int key, NODE* right_child) 
 {
-  printf("inside insert_in_parent\n");
   if (Root == left_child) {
-    printf("New root\n");
     NODE *new_root = alloc_leaf(NULL);
     new_root -> isLeaf = false;
     new_root -> chi[0] = left_child;
@@ -196,10 +197,9 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
     return;
   }
   NODE *parent = left_child -> parent;
-  printf("stop");
   //Insert new child and key
+  //If there is a space in parent
   if (parent -> nkey < N -1 ) {
-    printf("inside insert_in_parent2\n");
     int i;
     //If the key is the smallest
     if (key < parent -> key[0]) {
@@ -207,6 +207,8 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
         parent ->chi[i] = parent ->chi[i-1];
         parent ->key[i] = parent ->key[i-1];
       }
+      //Connect left_child
+      parent -> chi[0] = left_child;
     }
     //If the key should be in the middle or the end
     else {
@@ -218,6 +220,7 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
         parent->key[j] = parent->key[j-1] ;
       } 
     }
+    //Connect right_child and insert key and increase nkey of parent
     parent -> chi[i+1] = right_child;
     parent -> key[i] = key;
     parent -> nkey++; 
@@ -226,13 +229,11 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
   else {
     TEMP *tempNode = create_temp(parent, key, left_child);
     int i;
-    //If the key is the smallest
-    printf("stop");
+    //Find the position to insert right_child
     for (i = 0; i < N; i++) {
       if (left_child == parent -> chi[i]) break;
     }
     tempNode -> chi[i+1] = right_child;
-    printf("stop");
     temp_split(tempNode, parent);
     return;
   }
@@ -242,7 +243,6 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
 void 
 split(TEMP *tempnode, NODE *original_node) 
 {
-  printf("inside split\n");
   NODE *new_node;
   if (!(new_node = (NODE*) calloc(1, sizeof(NODE)))) ERR;
   int i;
@@ -296,10 +296,8 @@ insert(int key, DATA *data)
 		insert_in_leaf(leaf, key, data);
 	}
 	else {
-    printf("have to split\n");
     TEMP* tempNode = create_temp(leaf, key, (NODE*) data);
     split(tempNode, leaf);
-    printf("split done\n");
 	}
   return;
 }
@@ -330,18 +328,51 @@ main(int argc, char *argv[])
 
 	printf("-----Insert-----\n");
 	begin = cur_time();
-  while (true) {
-    // insert(interactive(), NULL);
-    insert(1, NULL);
+  // while (true) {
+  //   insert(interactive(), NULL);
     insert(2, NULL);
-    insert(5, NULL);
-    insert(6, NULL);
-    insert(4, NULL);
+      print_tree(Root);
     insert(3, NULL);
-    printf("after insert\n");
+      print_tree(Root);
+    insert(4, NULL);
+      print_tree(Root);
+
+    insert(5, NULL);
+      print_tree(Root);
+
+    insert(6, NULL);
     print_tree(Root);
-  }
+    insert(10, NULL);
+    print_tree(Root);
+    insert(11, NULL);
+  //   test(5);
+  // }
+  //test(10);
+  print_tree(Root);
 	end = cur_time();
 
 	return 0;
+}
+
+int search(int key) {
+  NODE *leaf;
+  leaf = find_leaf(Root, key);
+  for (int i = 0; i < N - 1; i++) {
+    if (key == leaf -> key[i]) return 1;
+  }
+  return 0;
+}
+
+void test(int num_data) {
+  int result = 0;
+  for (int i = num_data; i > 0; i--) {
+    insert(i, NULL);
+  }
+  printf("INSERTION DONE\n");
+  for (int i = num_data; i > 0; i--) {
+    if (!search(i)) printf("FAIL TO FIND: %d\n", i);
+    else result++;
+  }
+  printf("%d SUCCESS\n", result);
+  return;
 }
