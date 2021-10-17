@@ -1,6 +1,8 @@
 #include "bptree.h"
 #include <vector>
 #include <sys/time.h>
+#include <iostream>
+#include <random>
 
 struct timeval
 cur_time(void)
@@ -13,18 +15,24 @@ cur_time(void)
 //Prototype
 void print_tree_core(NODE *n);
 void print_tree(NODE *node);
-NODE * find_leaf(NODE *node, int key);
-NODE * insert_in_leaf(NODE *leaf, int key, DATA *data);
-NODE * alloc_leaf(NODE *parent);
+NODE *find_leaf(NODE *node, int key);
+NODE *insert_in_leaf(NODE *leaf, int key, DATA *data);
+NODE *alloc_leaf(NODE *parent);
 void temp_split(TEMP *tempNode, NODE *leaf);
-TEMP* create_temp(NODE *leaf, int key, NODE *pointer);
+TEMP *create_temp(NODE *leaf, int key, NODE *pointer);
 void insert_in_parent(NODE* left_child, int key, NODE* right_child);
 void split(TEMP *tempnode, NODE *original_node);
 void insert(int key, DATA *data);
 void init_root(void);
 int interactive();
+
+/* 
+** test type 1: keys in order
+** test type 2: keys in reverse order
+** test type 3: random keys
+*/
+void test(int test_type, int num_data);
 int search(int key);
-void test(int num_data);
 
 void
 print_tree_core(NODE *n)
@@ -323,47 +331,27 @@ int
 main(int argc, char *argv[])
 {
   struct timeval begin, end;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distr(1, 10);
+  for (int i = 0; i < 10; i++) {
+    std::cout << distr(gen) << ' ';
+  }
+
+
 
 	init_root();
 
-	printf("-----Insert-----\n");
 	begin = cur_time();
-  // insert(2, NULL);
-  // print_tree(Root);
-  // insert(3, NULL);
-  // print_tree(Root);
-  // insert(4, NULL);
-  // print_tree(Root);
-
-  // insert(5, NULL);
-  // print_tree(Root);
-
-  // insert(6, NULL);
-  // print_tree(Root);
-  // insert(10, NULL);
-  // print_tree(Root);
-  // insert(11, NULL);
-  // insert(10, NULL);
-  // insert(9, NULL);
-  // insert(8, NULL);
-  // insert(7, NULL);
-  // insert(6, NULL);
-  // insert(5, NULL);
-  // insert(4, NULL);
-  // insert(3, NULL);
-  // insert(2, NULL);
-  // insert(1, NULL);
-
-  // test(5);
-  test(100000);
-  //test(10);
-  //print_tree(Root);
+  test(2, 100);
 	end = cur_time();
 
 	return 0;
 }
 
-int search(int key) {
+int 
+search(int key) 
+{
   NODE *leaf;
   leaf = find_leaf(Root, key);
   for (int i = 0; i < N - 1; i++) {
@@ -372,15 +360,48 @@ int search(int key) {
   return 0;
 }
 
-void test(int num_data) {
+void 
+test(int test_type, int num_data)
+{
   int result = 0;
-  for (int i = num_data; i > 0; i--) {
-    insert(i, NULL);
-  }
-  printf("INSERTION DONE\n");
-  for (int i = num_data; i > 0; i--) {
-    if (!search(i)) printf("FAIL TO FIND: %d\n", i);
-    else result++;
+  switch(test_type) 
+  {
+    case 1:
+      printf("IN ORDER\n");
+      for (int i = 1; i < num_data + 1; i++) {
+        insert(i, NULL);
+      }
+      printf("INSERTION DONE\n");
+      for (int i = 1; i < num_data + 1; i++) {
+        if (!search(i)) printf("FAIL TO FIND: %d\n", i);
+        else result++;
+      }
+      break;
+    case 2:
+      printf("REVERSE ORDER\n");
+      for (int i = num_data; i > 0; i--) {
+        insert(i, NULL);
+      }
+      printf("INSERTION DONE\n");
+      for (int i = num_data; i > 0; i--) {
+        if (!search(i)) printf("FAIL TO FIND: %d\n", i);
+        else result++;
+      }
+      break;
+    case 3:
+      printf("RANDOM ORDER\n");
+      for (int i = 1; i < num_data + 1; i++) {
+        insert(i, NULL);
+      }
+      printf("INSERTION DONE\n");
+      for (int i = 1; i < num_data + 1; i++) {
+        if (!search(i)) printf("FAIL TO FIND: %d\n", i);
+        else result++;
+      }
+      break;
+    default:
+      std::cout << "Wrong test type\n ";
+      break;
   }
   printf("%d SUCCESS\n", result);
   return;
