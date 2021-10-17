@@ -9,7 +9,7 @@
 #include <iostream>
 using namespace std;
 #define MAX_OBJ (1000*1000)
-#define N 3
+#define N 5
 
 typedef struct _DATA {
 	int key;

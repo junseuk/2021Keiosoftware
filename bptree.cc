@@ -208,7 +208,7 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
   NODE *parent = left_child -> parent;
   //Insert new child and key
   //If there is a space in parent
-  if (parent -> nkey < N -1 ) {
+  if (parent -> nkey < N - 1 ) {
     int i;
     //If the key is the smallest
     if (key < parent -> key[0]) {
@@ -225,14 +225,17 @@ insert_in_parent(NODE* left_child, int key, NODE* right_child)
         if (key < parent->key[i]) break;
       }
       for (int j = parent->nkey; j > i; j--) {		
-        parent->chi[j] = parent->chi[j-1] ;
-        parent->key[j] = parent->key[j-1] ;
-      } 
+        parent->key[j] = parent->key[j-1];
+      }
+      for (int k = parent->nkey+1; k > i + 1; k--) {
+        parent->chi[k] = parent->chi[k-1];
+      }
     }
     //Connect right_child and insert key and increase nkey of parent
     parent -> chi[i+1] = right_child;
     parent -> key[i] = key;
     parent -> nkey++; 
+    return;
   }
   //If parent is full
   else {
@@ -336,9 +339,9 @@ main(int argc, char *argv[])
 	init_root();
 
 	begin = cur_time();
-  test(3, 10);
-  print_tree(Root);
+  test(3, 1000);
 	end = cur_time();
+  //print_tree(Root);
 
 	return 0;
 }
