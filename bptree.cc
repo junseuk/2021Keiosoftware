@@ -2,7 +2,8 @@
 #include <vector>
 #include <sys/time.h>
 #include <iostream>
-#include <random>
+#include <stdlib.h>
+#include <time.h>
 
 struct timeval
 cur_time(void)
@@ -331,19 +332,12 @@ int
 main(int argc, char *argv[])
 {
   struct timeval begin, end;
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> distr(1, 10);
-  for (int i = 0; i < 10; i++) {
-    std::cout << distr(gen) << ' ';
-  }
-
-
 
 	init_root();
 
 	begin = cur_time();
-  test(2, 100);
+  test(3, 10);
+  print_tree(Root);
 	end = cur_time();
 
 	return 0;
@@ -377,6 +371,7 @@ test(int test_type, int num_data)
         else result++;
       }
       break;
+
     case 2:
       printf("REVERSE ORDER\n");
       for (int i = num_data; i > 0; i--) {
@@ -388,17 +383,35 @@ test(int test_type, int num_data)
         else result++;
       }
       break;
+
     case 3:
-      printf("RANDOM ORDER\n");
-      for (int i = 1; i < num_data + 1; i++) {
-        insert(i, NULL);
+      {
+        printf("RANDOM ORDER\n");
+        //Creating array
+        int len = num_data, i, r, temp;
+        int num[len];
+        for (temp=0, i=1; temp<len; i++,temp++) {
+          num[temp] = i;
+        }
+        srand( time(NULL) );
+        for( i=len-1; i>0; i-- ){
+          r = rand()%i;
+          temp = num[i];
+          num[i] = num[r];
+          num[r] = temp;
+        }
+        for (i=0;i<len;i++) {
+          printf("inserting %d\n", num[i]);
+          insert(num[i], NULL);
+        }
+        printf("INSERTION DONE\n");
+        for (int i = 1; i < num_data + 1; i++) {
+          if (!search(i)) printf("FAIL TO FIND: %d\n", i);
+          else result++;
+        }
+        break;
       }
-      printf("INSERTION DONE\n");
-      for (int i = 1; i < num_data + 1; i++) {
-        if (!search(i)) printf("FAIL TO FIND: %d\n", i);
-        else result++;
-      }
-      break;
+      
     default:
       std::cout << "Wrong test type\n ";
       break;
