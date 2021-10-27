@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <algorithm>
 
 struct timeval
 cur_time(void)
@@ -379,9 +380,8 @@ int main(int argc, char *argv[])
   init_root();
 
   begin = cur_time();
-  test(3, 10000000);
+  test(3, 100000000);
   end = cur_time();
-  //print_tree(Root);
 
   return 0;
 }
@@ -438,24 +438,34 @@ void test(int test_type, int num_data)
   case 3:
   {
     printf("RANDOM ORDER\n");
-    //Creating array
+    //Creating vector
     int len = num_data, i, r, temp;
-    int num[len];
-    for (temp = 0, i = 1; temp < len; i++, temp++)
+    vector<int> num;
+    for (i = 1; i < len + 1; i++)
     {
-      num[temp] = i;
+      num.push_back(i);
     }
-    srand(time(NULL));
-    for (i = len - 1; i > 0; i--)
-    {
-      r = rand() % i;
-      temp = num[i];
-      num[i] = num[r];
-      num[r] = temp;
-    }
+    //For C++98
+    random_shuffle(num.begin(), num.end());
+
+    /* Random shuffle when using int array.
+    **
+    ** srand(time(NULL));
+    ** for (i = len - 1; i > 0; i--)
+    ** {
+    **   r = rand() % i;
+    **   temp = num[i];
+    **   num[i] = num[r];
+    **   num[r] = temp;
+    ** }
+    ** for (i = 0; i < len; i++)
+    ** {
+    **   printf("inserting %d\n", num[i]);
+    **   insert(num[i], NULL);
+    ** }
+    */
     for (i = 0; i < len; i++)
     {
-      //printf("inserting %d\n", num[i]);
       insert(num[i], NULL);
     }
     printf("INSERTION DONE\n");
@@ -470,7 +480,7 @@ void test(int test_type, int num_data)
   }
 
   default:
-    std::cout << "Wrong test type\n ";
+    cout << "Wrong test type" << endl;
     break;
   }
   printf("%d SUCCESS\n", result);
