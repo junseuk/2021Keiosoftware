@@ -109,8 +109,8 @@ int main(void)
   int sfd;
   int nr;
   int ns;
-  TUPLE bufR[NB_BUFR];
-  TUPLE bufS[NB_BUFS];
+  TUPLE bufR[100];
+  TUPLE bufS[100];
   RESULT result;
   int resultVal = 0;
   struct timeval begin, end;
@@ -125,41 +125,39 @@ int main(void)
 
   while (true)
   {
-    nr = read(rfd, bufR, NB_BUFR * sizeof(TUPLE));
+    nr = read(rfd, bufR, 100 * sizeof(TUPLE));
     if (nr == -1) ERR;
     else if (nr == 0) break;
-    for (int i = 0; i < 100; i++)
-    {
-      printf("R -> key: %d\tvalue: %d\n", bufR[i].key, bufR[i].val);
-    }
-
-    if ((lseek(sfd, 0, SEEK_SET)) == -1) ERR;
-    //Create Hash table
-    for (int i = 0; i < 100; i++)
-    {
-      insertHash(bufR[i]);
-    }
-    //Join operation with threads
-    while (true)
-    {
-      ns = read(sfd, bufS, NB_BUFS * sizeof(TUPLE));
-      if (ns == -1) ERR;
-      else if (ns == 0) break;
-
-      for (int i = 0; i < 100; i++)
-      {
-        printf("S -> key: %d\tvalue: %d\n", bufS[i].key, bufS[i].val);
-      }
-      // for (int i = 0; i < 100; i++) {
-      //   TUPLE r = searchHash(bufS[i].key);
-      //   result.rkey = r.key;
-      //   result.rval = r.val;
-      //   result.skey = bufS[i].key;
-      //   result.sval = bufS[i].val;
-      //   resultVal += result.rval;
-      // }
-    }
   }
+  for (int i = 0; i < 100; i++)
+  {
+    printf("R -> key: %d\tvalue: %d\n", bufR[i].key, bufR[i].val);
+  }
+  //Create Hash table
+  for (int i = 0; i < 100; i++)
+  {
+    insertHash(bufR[i]);
+  }
+  //Join operation with threads
+  while (true)
+  {
+    ns = read(sfd, bufS, 100 * sizeof(TUPLE));
+    if (ns == 0) break;
+    else if (ns == -1) ERR;
+  }
+
+  for (int i=0;i<100;i++)
+  {
+    printf("S -> key: %d\tvalue: %d\n", bufS[i].key, bufS[i].val);
+  }
+    // for (int i = 0; i < 100; i++) {
+    //   TUPLE r = searchHash(bufS[i].key);
+    //   result.rkey = r.key;
+    //   result.rval = r.val;
+    //   result.skey = bufS[i].key;
+    //   result.sval = bufS[i].val;
+    //   resultVal += result.rval;
+    // }
   gettimeofday(&end, NULL);
   printDiff(begin, end);
   //printf("Result: %d\n", resultVal);

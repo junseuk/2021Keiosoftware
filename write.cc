@@ -9,7 +9,7 @@
 
 typedef struct _TUPLE
 {
-  char key;
+  int key;
   int val;
 } TUPLE;
 
@@ -36,7 +36,7 @@ void writeToStorage(const int max)
   int fd2;
   int key2 = 0;
   fd2 = open("S", O_WRONLY | O_TRUNC | O_CREAT, 0644);
-  if (fd == -1) ERR;
+  if (fd2 == -1) ERR;
   for (int i = 0; i < max; i++)
   {
     t2.key = key2++;
@@ -77,10 +77,7 @@ void readFromStorage()
   int byte2;
 
   fd2 = open("S", O_RDONLY);
-  if (fd2 == -1)
-  {
-    ERR;
-  }
+  if (fd2 == -1) ERR;
   while (1)
   {
     byte2 = read(fd2, bufS, 100 * sizeof(TUPLE));
