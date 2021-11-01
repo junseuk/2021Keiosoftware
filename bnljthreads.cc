@@ -7,7 +7,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include "debug.h"
-
+#include <thread>
+using namespace std;
 #define SZ_PAGE 4096
 #define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
@@ -38,7 +39,10 @@ typedef struct _NODE
   struct _NODE *next;
 } NODE;
 
+//Global variables
 BUCKET *hashTable = NULL;
+TUPLE bufR[100];
+TUPLE bufS[100];
 
 int hashFunction(int key)
 {
@@ -104,17 +108,28 @@ void printDiff(struct timeval begin, struct timeval end)
   printf("Diff: %ld us (%ld ms)\n", diff, diff / 1000);
 }
 
+void joinOperation(int key) {
+  RESULT result;
+  TUPLE* r = searchHash(bufS[key].key);
+  if (r != NULL) {
+    result.rkey = r -> key;
+    result.rval = r -> val;
+    result.skey = bufS[key].key;
+    result.sval = bufS[key].val;
+    //printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
+  }
+  return;
+}
+
 int main(void)
 {
   int rfd;
   int sfd;
   int nr;
   int ns;
-  TUPLE bufR[100];
-  TUPLE bufS[100];
-  RESULT result;
   int resultVal = 0;
   struct timeval begin, end;
+  thread t[100];
   hashTable = (BUCKET*) malloc(SZ_PAGE*sizeof(BUCKET));
 
   rfd = open("R", O_RDONLY);
@@ -142,22 +157,13 @@ int main(void)
     if (ns == 0) break;
     else if (ns == -1) ERR;
   }
-  //Joining operation
+  //Joining operation using threads, C++ 98 doesn't support std::thread
   for (int i = 0; i < 100; i++) {
-    TUPLE* r = searchHash(bufS[i].key);
-    if (r != NULL) {
-      result.rkey = r -> key;
-      result.rval = r -> val;
-      result.skey = bufS[i].key;
-      result.sval = bufS[i].val;
-      resultVal += 1;
-      //printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
-    }
-    else {
-      //When not found
-    }
+    t[i] = thread(joinOperation, bufS[i]);
   }
-
+  for (int i = 0; i < 100; i++) {
+    t[i].join();
+  }
   gettimeofday(&end, NULL);
   printDiff(begin, end);
   printf("Result: %d Success(es)\n", resultVal);
