@@ -14,7 +14,9 @@
 #define SZ_PAGE 10
 #define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
+#define BUCKET_SIZE 10
 #define THREAD_SIZE 2
+#define DATA_SIZE 100
 typedef struct _TUPLE
 {
   int key;
@@ -42,6 +44,13 @@ typedef struct _NODE
   struct _NODE *next;
 } NODE;
 
+typedef struct _ARG
+{
+  int start;
+  int end;
+  int thread_id;
+} ARG;
+
 //Global variables
 BUCKET *hashTable = NULL;
 TUPLE bufR[100];
@@ -49,7 +58,7 @@ TUPLE bufS[100];
 
 int hashFunction(int key)
 {
-  return key % SZ_PAGE;
+  return key % BUCKET_SIZE;
 }
 
 NODE *createNode(TUPLE tuple)
@@ -127,19 +136,10 @@ void joinOperation(int key) {
   return;
 }
 
-void insertWorker(int t_id) {
-  printf("insert worker thread %d\n", t_id);
-  if (t_id == 0) {
-    for (int i = 0; i < 50; i++) {
-      printf("%d from %d\n", i, t_id);
-      insertHash(bufR[i]);
-    }
-  }
-  else {
-    for (int i = 50; i < 100; i++) {
-      printf("%d from %d\n", i, t_id);
-      insertHash(bufR[i]);
-    }
+void insertWorker(ARG *arg) {
+  printf("thread_id: %d start: %d, end: %d\n", arg -> thread_id, arg -> start, arg -> end);
+  for (int i = arg -> start; i < arg -> end; i++) {
+    insertHash(bufR[i]);
   }
 }
 
@@ -173,7 +173,7 @@ void joinWorker(int t_id) {
 }
 
 void printHash() {	
-	for (int i = 0; i < SZ_PAGE; i++)
+	for (int i = 0; i < BUCKET_SIZE; i++)
 	{
 		if (hashTable[i].count != 0)
 		{
@@ -188,8 +188,8 @@ void printHash() {
 }
 
 void initHash() {
-  hashTable = (BUCKET*) malloc(SZ_PAGE * sizeof(BUCKET));
-  for (int i = 0; i < SZ_PAGE; i++) {
+  hashTable = (BUCKET*) malloc(BUCKET_SIZE * sizeof(BUCKET));
+  for (int i = 0; i < BUCKET_SIZE; i++) {
     hashTable[i].head = NULL;
     hashTable[i].count = 0;
     pthread_mutex_init(&(hashTable[i].lock), NULL);
@@ -203,10 +203,17 @@ int main(void)
   int nr;
   int ns;
   int resultVal;
-  RESULT result;
   struct timeval begin, end;
+  ARG args[THREAD_SIZE];
   std::vector<std::thread> threads;
   initHash();
+  //Initialization of args for each thread
+  for (int i = 0; i < THREAD_SIZE; i++) {
+    args[i].start = DATA_SIZE / THREAD_SIZE * i;
+    args[i].end = DATA_SIZE / THREAD_SIZE *  (i + 1);
+    args[i].thread_id = i;
+    //printf("thread_id: %d start: %d, end: %d\n", args[i].thread_id, args[i].start, args[i].end);
+  }
 
   rfd = open("R", O_RDONLY);
   if (rfd == -1) ERR;
@@ -216,12 +223,12 @@ int main(void)
   //Read "R"
   while (true)
   {
-    nr = read(rfd, bufR, 100 * sizeof(TUPLE));
+    nr = read(rfd, bufR, DATA_SIZE * sizeof(TUPLE));
     if (nr == -1) ERR;
     else if (nr == 0) break;
   }
-  for (int i = 0; i < 2; i++) {
-    threads.emplace_back(insertWorker, i);
+  for (int i = 0; i < THREAD_SIZE; i++) {
+    threads.emplace_back(insertWorker, &args[i]);
   }
   for (auto &thread : threads) {
     if (thread.joinable()) thread.join();
