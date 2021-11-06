@@ -64,7 +64,8 @@
         "utility": "cpp",
         "numeric": "cpp",
         "random": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "__bits": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

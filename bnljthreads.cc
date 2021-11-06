@@ -8,11 +8,13 @@
 #include <sys/time.h>
 #include "debug.h"
 #include <thread>
-using namespace std;
-#define SZ_PAGE 4096
+#include <iostream>
+#include <vector>
+#include <pthread.h>
+#define SZ_PAGE 10
 #define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
-
+#define THREAD_SIZE 2
 typedef struct _TUPLE
 {
   int key;
@@ -31,6 +33,7 @@ typedef struct _BUCKET
 {
   struct _NODE *head;
   int count;
+  pthread_mutex_t lock;
 } BUCKET;
 
 typedef struct _NODE
@@ -63,19 +66,22 @@ void insertHash(TUPLE tuple)
 {
   int hashIndex = hashFunction(tuple.key);
   NODE *newNode = createNode(tuple);
+  if (pthread_mutex_trylock(&(hashTable[hashIndex].lock)) == 0) {
+    if (hashTable[hashIndex].count == 0)
+    {
+      hashTable[hashIndex].head = newNode;
+      hashTable[hashIndex].count = 1;
+    }
+    //If there are nodes at hashIndex
+    else
+    {
+      newNode->next = hashTable[hashIndex].head;
+      hashTable[hashIndex].head = newNode;
+      hashTable[hashIndex].count += 1;
+    }
+    pthread_mutex_unlock(&(hashTable[hashIndex].lock));
+  }
   //No node at hashIndex
-  if (hashTable[hashIndex].count == 0)
-  {
-    hashTable[hashIndex].head = newNode;
-    hashTable[hashIndex].count = 1;
-  }
-  //If there are nodes at hashIndex
-  else
-  {
-    newNode->next = hashTable[hashIndex].head;
-    hashTable[hashIndex].head = newNode;
-    hashTable[hashIndex].count += 1;
-  }
   return;
 }
 
@@ -121,22 +127,91 @@ void joinOperation(int key) {
   return;
 }
 
+void insertWorker(int t_id) {
+  printf("insert worker thread %d\n", t_id);
+  if (t_id == 0) {
+    for (int i = 0; i < 50; i++) {
+      printf("%d from %d\n", i, t_id);
+      insertHash(bufR[i]);
+    }
+  }
+  else {
+    for (int i = 50; i < 100; i++) {
+      printf("%d from %d\n", i, t_id);
+      insertHash(bufR[i]);
+    }
+  }
+}
+
+void joinWorker(int t_id) {
+  RESULT result;
+  printf("join worker thread %d\n", t_id);
+  // if (t_id == 0) {
+  //   for (int i = 0; i < 50; i++) {
+  //     printf("%d from %d\n", i, t_id);
+  //     TUPLE* r = searchHash(bufS[i].key);
+  //     if (r != NULL) {
+  //       result.rkey = r -> key;
+  //       result.rval = r -> val;
+  //       result.skey = bufS[i].key;
+  //       result.sval = bufS[i].val;
+  //     }
+  //   }
+  // }
+  // else {
+  //   for (int i = 50; i < 100; i++) {
+  //     printf("%d from %d\n", i, t_id);
+  //     TUPLE* r = searchHash(bufS[i].key);
+  //     if (r != NULL) {
+  //       result.rkey = r -> key;
+  //       result.rval = r -> val;
+  //       result.skey = bufS[i].key;
+  //       result.sval = bufS[i].val;
+  //     }
+  //   }
+  // }
+}
+
+void printHash() {	
+	for (int i = 0; i < SZ_PAGE; i++)
+	{
+		if (hashTable[i].count != 0)
+		{
+      NODE *node = hashTable[i].head;
+      printf("----HASHTABLE[%d]----\n", i);
+      for (int j = 0; j < hashTable[i].count; j++) {
+        printf("key: %d value: %d\n", node -> tuple.key, node -> tuple.val);
+        node = node -> next;
+      }
+		}
+	}
+}
+
+void initHash() {
+  hashTable = (BUCKET*) malloc(SZ_PAGE * sizeof(BUCKET));
+  for (int i = 0; i < SZ_PAGE; i++) {
+    hashTable[i].head = NULL;
+    hashTable[i].count = 0;
+    pthread_mutex_init(&(hashTable[i].lock), NULL);
+  }
+}
+
 int main(void)
 {
   int rfd;
   int sfd;
   int nr;
   int ns;
-  int resultVal = 0;
+  int resultVal;
+  RESULT result;
   struct timeval begin, end;
-  thread t[100];
-  hashTable = (BUCKET*) malloc(SZ_PAGE*sizeof(BUCKET));
+  std::vector<std::thread> threads;
+  initHash();
 
   rfd = open("R", O_RDONLY);
   if (rfd == -1) ERR;
   sfd = open("S", O_RDONLY);
   if (sfd == -1) ERR;
-
   gettimeofday(&begin, NULL);
   //Read "R"
   while (true)
@@ -145,28 +220,45 @@ int main(void)
     if (nr == -1) ERR;
     else if (nr == 0) break;
   }
-  //Create Hash table
-  for (int i = 0; i < 100; i++)
-  {
-    insertHash(bufR[i]);
+  for (int i = 0; i < 2; i++) {
+    threads.emplace_back(insertWorker, i);
+  }
+  for (auto &thread : threads) {
+    if (thread.joinable()) thread.join();
+    printf("FIRST JOIN DONE\n");
   }
   //Read "S"
-  while (true)
-  {
-    ns = read(sfd, bufS, 100 * sizeof(TUPLE));
-    if (ns == 0) break;
-    else if (ns == -1) ERR;
-  }
-  //Joining operation using threads, C++ 98 doesn't support std::thread
-  for (int i = 0; i < 100; i++) {
-    t[i] = thread(joinOperation, bufS[i]);
-  }
-  for (int i = 0; i < 100; i++) {
-    t[i].join();
-  }
+  // while (true)
+  // {
+  //   ns = read(sfd, bufS, 100 * sizeof(TUPLE));
+  //   if (ns == 0) break;
+  //   else if (ns == -1) ERR;
+  // }
+  // for (int i = 0; i < 2; i++) {
+  //   threads.emplace_back(joinWorker, i);
+  // }
+  // for (auto &thread : threads) {
+  //   if (thread.joinable()) thread.join();
+  //   printf("SECOND JOIN DONE\n");
+  // }
+  // Manually join
+  // for (int i = 0; i < 100; i++) {
+  //   TUPLE* r = searchHash(bufS[i].key);
+  //   if (r != NULL) {
+  //     result.rkey = r -> key;
+  //     result.rval = r -> val;
+  //     result.skey = bufS[i].key;
+  //     result.sval = bufS[i].val;
+  //     resultVal += 1;
+  //     printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
+  //   }
+  //   else {
+  //     //When not found
+  //   }
+  // }
   gettimeofday(&end, NULL);
   printDiff(begin, end);
   printf("Result: %d Success(es)\n", resultVal);
-
+  printHash();
   return 0;
 }

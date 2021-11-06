@@ -104,6 +104,29 @@ void printDiff(struct timeval begin, struct timeval end)
   printf("Diff: %ld us (%ld ms)\n", diff, diff / 1000);
 }
 
+void printHash() {	
+	for (int i = 0; i < SZ_PAGE; i++)
+	{
+		if (hashTable[i].count != 0)
+		{
+      NODE *node = hashTable[i].head;
+      printf("----HASHTABLE[%d]----\n", i);
+      for (int j = 0; j < hashTable[i].count; j++) {
+        printf("key: %d value: %d\n", node -> tuple.key, node -> tuple.val);
+        node = node -> next;
+      }
+		}
+	}
+}
+
+void initHash() {
+  hashTable = (BUCKET*) malloc(SZ_PAGE * sizeof(BUCKET));
+  for (int i = 0; i < SZ_PAGE; i++) {
+    hashTable[i].head = NULL;
+    hashTable[i].count = 0;
+  }
+}
+
 int main(void)
 {
   int rfd;
@@ -115,7 +138,7 @@ int main(void)
   RESULT result;
   int resultVal = 0;
   struct timeval begin, end;
-  hashTable = (BUCKET*) malloc(SZ_PAGE*sizeof(BUCKET));
+  initHash();
 
   rfd = open("R", O_RDONLY);
   if (rfd == -1) ERR;
@@ -161,6 +184,6 @@ int main(void)
   gettimeofday(&end, NULL);
   printDiff(begin, end);
   printf("Result: %d Success(es)\n", resultVal);
-
+  printHash();
   return 0;
 }
