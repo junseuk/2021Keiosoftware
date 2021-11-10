@@ -1,60 +1,11 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include "debug.h"
-#include <thread>
-#include <iostream>
-#include <vector>
-#include <pthread.h>
-#define SZ_PAGE 10
-#define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
-#define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
-#define BUCKET_SIZE 10
-#define THREAD_SIZE 2
-#define DATA_SIZE 100
-typedef struct _TUPLE
-{
-  int key;
-  int val;
-} TUPLE;
-
-typedef struct _RESULT
-{
-  int rkey;
-  int rval;
-  int skey;
-  int sval;
-} RESULT;
-
-typedef struct _BUCKET
-{
-  struct _NODE *head;
-  int count;
-  pthread_mutex_t lock;
-} BUCKET;
-
-typedef struct _NODE
-{
-  TUPLE tuple;
-  struct _NODE *next;
-} NODE;
-
-typedef struct _ARG
-{
-  int start;
-  int end;
-  int thread_id;
-} ARG;
+#include "bnljthreads.h"
 
 //Global variables
 BUCKET *hashTable = NULL;
 TUPLE bufR[100];
 TUPLE bufS[100];
+int successNum;
+int failureNum;
 
 int hashFunction(int key)
 {
@@ -100,7 +51,7 @@ TUPLE* searchHash(int key) {
     TUPLE* tuple;
     NODE* node = hashTable[hashIndex].head;
     if (node == NULL) {
-        printf("[ Hash Search ] NOT FOUND\n");
+        // printf("[ Hash Search ] NOT FOUND\n");
         return NULL;
     }
     while(node != NULL) {
@@ -123,16 +74,18 @@ void printDiff(struct timeval begin, struct timeval end)
   printf("Diff: %ld us (%ld ms)\n", diff, diff / 1000);
 }
 
-void joinOperation(int key) {
+void joinOperation(TUPLE tuple) {
   RESULT result;
-  TUPLE* r = searchHash(bufS[key].key);
+  TUPLE* r = searchHash(tuple.key);
   if (r != NULL) {
     result.rkey = r -> key;
     result.rval = r -> val;
-    result.skey = bufS[key].key;
-    result.sval = bufS[key].val;
-    //printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
+    result.skey = tuple.key;
+    result.sval = tuple.val;
+    printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
+    successNum++;
   }
+  else failureNum++;
   return;
 }
 
@@ -143,33 +96,11 @@ void insertWorker(ARG *arg) {
   }
 }
 
-void joinWorker(int t_id) {
+void joinWorker(ARG *arg) {
   RESULT result;
-  printf("join worker thread %d\n", t_id);
-  // if (t_id == 0) {
-  //   for (int i = 0; i < 50; i++) {
-  //     printf("%d from %d\n", i, t_id);
-  //     TUPLE* r = searchHash(bufS[i].key);
-  //     if (r != NULL) {
-  //       result.rkey = r -> key;
-  //       result.rval = r -> val;
-  //       result.skey = bufS[i].key;
-  //       result.sval = bufS[i].val;
-  //     }
-  //   }
-  // }
-  // else {
-  //   for (int i = 50; i < 100; i++) {
-  //     printf("%d from %d\n", i, t_id);
-  //     TUPLE* r = searchHash(bufS[i].key);
-  //     if (r != NULL) {
-  //       result.rkey = r -> key;
-  //       result.rval = r -> val;
-  //       result.skey = bufS[i].key;
-  //       result.sval = bufS[i].val;
-  //     }
-  //   }
-  // }
+  for (int i = arg -> start; i < arg -> end; i++) {
+    joinOperation(bufS[i]);
+  }
 }
 
 void printHash() {	
@@ -202,15 +133,16 @@ int main(void)
   int sfd;
   int nr;
   int ns;
-  int resultVal;
   struct timeval begin, end;
   ARG args[THREAD_SIZE];
-  std::vector<std::thread> threads;
+  std::vector<std::thread> writeThreads;
+  std::vector<std::thread> readThreads;
   initHash();
   //Initialization of args for each thread
   for (int i = 0; i < THREAD_SIZE; i++) {
     args[i].start = DATA_SIZE / THREAD_SIZE * i;
-    args[i].end = DATA_SIZE / THREAD_SIZE *  (i + 1);
+    if (i != THREAD_SIZE - 1) args[i].end = DATA_SIZE / THREAD_SIZE *  (i + 1);
+    else args[i].end = DATA_SIZE;
     args[i].thread_id = i;
     //printf("thread_id: %d start: %d, end: %d\n", args[i].thread_id, args[i].start, args[i].end);
   }
@@ -228,44 +160,29 @@ int main(void)
     else if (nr == 0) break;
   }
   for (int i = 0; i < THREAD_SIZE; i++) {
-    threads.emplace_back(insertWorker, &args[i]);
+    writeThreads.emplace_back(insertWorker, &args[i]);
   }
-  for (auto &thread : threads) {
+  for (auto &thread : writeThreads) {
     if (thread.joinable()) thread.join();
-    printf("FIRST JOIN DONE\n");
   }
+  printHash();
+  printf("----Join Operation----\n");
   //Read "S"
-  // while (true)
-  // {
-  //   ns = read(sfd, bufS, 100 * sizeof(TUPLE));
-  //   if (ns == 0) break;
-  //   else if (ns == -1) ERR;
-  // }
-  // for (int i = 0; i < 2; i++) {
-  //   threads.emplace_back(joinWorker, i);
-  // }
-  // for (auto &thread : threads) {
-  //   if (thread.joinable()) thread.join();
-  //   printf("SECOND JOIN DONE\n");
-  // }
-  // Manually join
-  // for (int i = 0; i < 100; i++) {
-  //   TUPLE* r = searchHash(bufS[i].key);
-  //   if (r != NULL) {
-  //     result.rkey = r -> key;
-  //     result.rval = r -> val;
-  //     result.skey = bufS[i].key;
-  //     result.sval = bufS[i].val;
-  //     resultVal += 1;
-  //     printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
-  //   }
-  //   else {
-  //     //When not found
-  //   }
-  // }
+  while (true)
+  {
+    ns = read(sfd, bufS, 100 * sizeof(TUPLE));
+    if (ns == 0) break;
+    else if (ns == -1) ERR;
+  }
+  for (int i = 0; i < THREAD_SIZE; i++) {
+    readThreads.emplace_back(joinWorker, &args[i]);
+  }
+  for (auto &thread : readThreads) {
+    if (thread.joinable()) thread.join();
+  }
+
   gettimeofday(&end, NULL);
   printDiff(begin, end);
-  printf("Result: %d Success(es)\n", resultVal);
-  printHash();
+  printf("Result: %d Successes %d Failures\n", successNum, failureNum);
   return 0;
 }
