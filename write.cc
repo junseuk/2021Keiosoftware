@@ -50,7 +50,7 @@ void readFromStorage()
 {
   //READ "R"
   int fd;
-  TUPLE bufR[100];
+  TUPLE bufR[1000000];
   int byte;
 
   fd = open("R", O_RDONLY);
@@ -73,14 +73,14 @@ void readFromStorage()
   close(fd);
   //READ "S"
   int fd2;
-  TUPLE bufS[100];
+  TUPLE bufS[1000000];
   int byte2;
 
   fd2 = open("S", O_RDONLY);
   if (fd2 == -1) ERR;
   while (1)
   {
-    byte2 = read(fd2, bufS, 100 * sizeof(TUPLE));
+    byte2 = read(fd2, bufS, 1000000 * sizeof(TUPLE));
     if (byte2 == 0) break;
     else if (byte2 == -1) ERR;
   }
@@ -93,15 +93,10 @@ void readFromStorage()
 
 int main(int argc, char *argv[])
 {
-  int max;
-
-  if (argc != 2)
-    max = 100;
-  else
-    max = atoi(argv[1]);
+  int max = 1000000;
 
   writeToStorage(max);
-  readFromStorage();
+  //readFromStorage();
 
   return 0;
 }

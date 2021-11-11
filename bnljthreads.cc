@@ -2,8 +2,8 @@
 
 //Global variables
 BUCKET *hashTable = NULL;
-TUPLE bufR[100];
-TUPLE bufS[100];
+TUPLE bufR[DATA_SIZE];
+TUPLE bufS[DATA_SIZE];
 int successNum;
 int failureNum;
 
@@ -26,7 +26,7 @@ void insertHash(TUPLE tuple)
 {
   int hashIndex = hashFunction(tuple.key);
   NODE *newNode = createNode(tuple);
-  if (pthread_mutex_trylock(&(hashTable[hashIndex].lock)) == 0) {
+  if (pthread_mutex_lock(&(hashTable[hashIndex].lock)) == 0) {
     if (hashTable[hashIndex].count == 0)
     {
       hashTable[hashIndex].head = newNode;
@@ -41,12 +41,10 @@ void insertHash(TUPLE tuple)
     }
     pthread_mutex_unlock(&(hashTable[hashIndex].lock));
   }
-  //No node at hashIndex
   return;
 }
 
 TUPLE* searchHash(int key) {
-    int searchCount = 0;
     int hashIndex = hashFunction(key);
     TUPLE* tuple;
     NODE* node = hashTable[hashIndex].head;
@@ -55,7 +53,6 @@ TUPLE* searchHash(int key) {
         return NULL;
     }
     while(node != NULL) {
-        searchCount++;
         if (node -> tuple.key == key) {
             // printf("[  Hash Search  ] FOUND! Key: %d Value: %d\n", node -> tuple.key, node -> tuple.val);
             // printf("[  Hash Search  ] Search Count: %d\n", searchCount);
@@ -75,17 +72,19 @@ void printDiff(struct timeval begin, struct timeval end)
 }
 
 void joinOperation(TUPLE tuple) {
-  RESULT result;
-  TUPLE* r = searchHash(tuple.key);
+  RESULT *result;
+  if (!(result = (RESULT *)calloc(1, sizeof(RESULT)))) ERR;
+  TUPLE *r = searchHash(tuple.key);
   if (r != NULL) {
-    result.rkey = r -> key;
-    result.rval = r -> val;
-    result.skey = tuple.key;
-    result.sval = tuple.val;
-    printf("%d %d %d %d\n", result.rkey, result.rval, result.skey, result.sval);
+    result -> rkey = r -> key;
+    result -> rval = r -> val;
+    result -> skey = tuple.key;
+    result -> sval = tuple.val;
+    //printf("%d %d %d %d\n", result -> rkey, result -> rval, result -> skey, result -> sval);
     successNum++;
   }
   else failureNum++;
+  free(result);
   return;
 }
 
@@ -97,10 +96,39 @@ void insertWorker(ARG *arg) {
 }
 
 void joinWorker(ARG *arg) {
-  RESULT result;
   for (int i = arg -> start; i < arg -> end; i++) {
     joinOperation(bufS[i]);
   }
+}
+
+void printData() {
+  int count = 0;
+  for (int i = 0; i < DATA_SIZE; i++) {
+    printf("key: %d, val: %d ", bufR[i].key, bufR[i].val);
+    count++;
+  }
+}
+
+void testHash() {
+  int successes = 0;
+  int failures = 0;
+  for (int i = 0; i < DATA_SIZE; i++) {
+    int hashIndex = hashFunction(i);
+    NODE* node = hashTable[hashIndex].head;
+    while(node != NULL) {
+      if (node -> tuple.key == i) {
+        successes++;  
+        break;
+      }
+      else if (node == NULL) {
+        failures++;
+        break;
+      }
+      node = node -> next;
+    }
+  }
+  printf("%d Successes, %d Failures\n", successes, failures);
+  return;
 }
 
 void printHash() {	
@@ -149,8 +177,8 @@ int main(void)
 
   rfd = open("R", O_RDONLY);
   if (rfd == -1) ERR;
-  sfd = open("S", O_RDONLY);
-  if (sfd == -1) ERR;
+  // sfd = open("S", O_RDONLY);
+  // if (sfd == -1) ERR;
   gettimeofday(&begin, NULL);
   //Read "R"
   while (true)
@@ -165,24 +193,26 @@ int main(void)
   for (auto &thread : writeThreads) {
     if (thread.joinable()) thread.join();
   }
-  printHash();
-  printf("----Join Operation----\n");
+  // printData();
+  //printHash();
+  testHash();
+  // printf("----Join Operation----\n");
+  close(rfd);
   //Read "S"
-  while (true)
-  {
-    ns = read(sfd, bufS, 100 * sizeof(TUPLE));
-    if (ns == 0) break;
-    else if (ns == -1) ERR;
-  }
-  for (int i = 0; i < THREAD_SIZE; i++) {
-    readThreads.emplace_back(joinWorker, &args[i]);
-  }
-  for (auto &thread : readThreads) {
-    if (thread.joinable()) thread.join();
-  }
-
+  // while (true)
+  // {
+  //   ns = read(sfd, bufS, DATA_SIZE * sizeof(TUPLE));
+  //   if (ns == 0) break;
+  //   else if (ns == -1) ERR;
+  // }
+  // for (int i = 0; i < THREAD_SIZE; i++) {
+  //   readThreads.emplace_back(joinWorker, &args[i]);
+  // }
+  // for (auto &thread : readThreads) {
+  //   if (thread.joinable()) thread.join();
+  // }
   gettimeofday(&end, NULL);
   printDiff(begin, end);
-  printf("Result: %d Successes %d Failures\n", successNum, failureNum);
+  // printf("Result: %d Successes %d Failures\n", successNum, failureNum);
   return 0;
 }

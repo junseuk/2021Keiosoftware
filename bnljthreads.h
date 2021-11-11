@@ -12,12 +12,12 @@
 #include <iostream>
 #include <vector>
 
-#define SZ_PAGE 10
+#define SZ_PAGE 4052
 #define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
-#define BUCKET_SIZE 10
-#define THREAD_SIZE 7
-#define DATA_SIZE 100
+#define BUCKET_SIZE 1000
+#define THREAD_SIZE 5
+#define DATA_SIZE 1000000
 typedef struct _TUPLE
 {
   int key;
