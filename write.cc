@@ -93,7 +93,7 @@ void readFromStorage(int max)
 
 int main(int argc, char *argv[])
 {
-  int max = 100000;
+  int max = 1000000;
 
   writeToStorage(max);
   //readFromStorage(max);

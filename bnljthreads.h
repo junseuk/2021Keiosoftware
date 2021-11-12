@@ -15,9 +15,9 @@
 #define SZ_PAGE 4052
 #define NB_BUFR (SZ_PAGE * 2 / sizeof(TUPLE))
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
-#define BUCKET_SIZE 1000
-#define THREAD_SIZE 5
-#define DATA_SIZE 100000
+#define BUCKET_SIZE 10000
+#define THREAD_SIZE 10
+#define DATA_SIZE 1000000
 typedef struct _TUPLE
 {
   int key;
@@ -31,13 +31,6 @@ typedef struct _RESULT
   int skey;
   int sval;
 } RESULT;
-
-typedef struct _BUCKET
-{
-  struct _NODE *head;
-  int count;
-  pthread_mutex_t lock;
-} BUCKET;
 
 typedef struct _NODE
 {
