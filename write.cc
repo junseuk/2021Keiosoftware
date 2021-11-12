@@ -46,11 +46,11 @@ void writeToStorage(const int max)
   close(fd2);
 }
 
-void readFromStorage()
+void readFromStorage(int max)
 {
   //READ "R"
   int fd;
-  TUPLE bufR[1000000];
+  TUPLE bufR[max];
   int byte;
 
   fd = open("R", O_RDONLY);
@@ -60,31 +60,31 @@ void readFromStorage()
   }
   while (1)
   {
-    byte = read(fd, bufR, 100 * sizeof(TUPLE));
+    byte = read(fd, bufR, max * sizeof(TUPLE));
     if (byte == 0)
       break;
     else if (byte == -1)
       ERR;
   }
-  for (int i=0;i<100;i++)
+  for (int i=0;i<max;i++)
   {
     printf("R -> key: %d\tvalue: %d\n", bufR[i].key, bufR[i].val);
   }
   close(fd);
   //READ "S"
   int fd2;
-  TUPLE bufS[1000000];
+  TUPLE bufS[max];
   int byte2;
 
   fd2 = open("S", O_RDONLY);
   if (fd2 == -1) ERR;
   while (1)
   {
-    byte2 = read(fd2, bufS, 1000000 * sizeof(TUPLE));
+    byte2 = read(fd2, bufS, max * sizeof(TUPLE));
     if (byte2 == 0) break;
     else if (byte2 == -1) ERR;
   }
-  for (int i=0;i<100;i++)
+  for (int i=0;i<max;i++)
   {
     printf("S -> key: %d\tvalue: %d\n", bufS[i].key, bufS[i].val);
   }
@@ -93,10 +93,10 @@ void readFromStorage()
 
 int main(int argc, char *argv[])
 {
-  int max = 1000000;
+  int max = 100000;
 
   writeToStorage(max);
-  //readFromStorage();
+  //readFromStorage(max);
 
   return 0;
 }
