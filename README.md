@@ -1,14 +1,15 @@
-# 2021Keiosoftware
-2021 Fall semester software engineering class
+# 2021 Fall semester software engineering class
 
 ## Parallel hash insert/search/join operation results:
+
+```
 DATA {
   int key;
   int value;
 }
-DATA_SIZE = 10000000
+DATA_SIZE = 10000000 //80MB for each file 'R', 'S'
 BUCKET_SIZE = 1000000
-Files name = 'R', 'S' (each 80MB)
+```
 
 ### Case 1: pthread_mutex_lock, THREAD_SIZE = 10
 Diff: 494826 us (494 ms)
