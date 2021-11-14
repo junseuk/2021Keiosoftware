@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include "debug.h"
-
 typedef struct _TUPLE
 {
   int key;
@@ -14,8 +13,9 @@ typedef struct _TUPLE
 } TUPLE;
 
 #define FILE "R"
+#define DATA_SIZE 10000000
 
-void writeToStorage(const int max)
+void writeToStorage()
 {
   int fd;
   TUPLE t;
@@ -24,7 +24,7 @@ void writeToStorage(const int max)
   fd = open(FILE, O_WRONLY | O_TRUNC | O_CREAT, 0644);
   if (fd == -1)
     ERR;
-  for (int i = 0; i < max; i++)
+  for (int i = 0; i < DATA_SIZE; i++)
   {
     t.key = key++;
     t.val = rand() % 100;
@@ -37,7 +37,7 @@ void writeToStorage(const int max)
   int key2 = 0;
   fd2 = open("S", O_WRONLY | O_TRUNC | O_CREAT, 0644);
   if (fd2 == -1) ERR;
-  for (int i = 0; i < max; i++)
+  for (int i = 0; i < DATA_SIZE; i++)
   {
     t2.key = key2++;
     t2.val = rand() % 100;
@@ -46,11 +46,11 @@ void writeToStorage(const int max)
   close(fd2);
 }
 
-void readFromStorage(int max)
+void readFromStorage()
 {
   //READ "R"
   int fd;
-  TUPLE bufR[max];
+  TUPLE bufR[DATA_SIZE];
   int byte;
 
   fd = open("R", O_RDONLY);
@@ -60,31 +60,31 @@ void readFromStorage(int max)
   }
   while (1)
   {
-    byte = read(fd, bufR, max * sizeof(TUPLE));
+    byte = read(fd, bufR, DATA_SIZE * sizeof(TUPLE));
     if (byte == 0)
       break;
     else if (byte == -1)
       ERR;
   }
-  for (int i=0;i<max;i++)
+  for (int i=0;i<DATA_SIZE;i++)
   {
     printf("R -> key: %d\tvalue: %d\n", bufR[i].key, bufR[i].val);
   }
   close(fd);
   //READ "S"
   int fd2;
-  TUPLE bufS[max];
+  TUPLE bufS[DATA_SIZE];
   int byte2;
 
   fd2 = open("S", O_RDONLY);
   if (fd2 == -1) ERR;
   while (1)
   {
-    byte2 = read(fd2, bufS, max * sizeof(TUPLE));
+    byte2 = read(fd2, bufS, DATA_SIZE * sizeof(TUPLE));
     if (byte2 == 0) break;
     else if (byte2 == -1) ERR;
   }
-  for (int i=0;i<max;i++)
+  for (int i=0;i<DATA_SIZE;i++)
   {
     printf("S -> key: %d\tvalue: %d\n", bufS[i].key, bufS[i].val);
   }
@@ -93,10 +93,8 @@ void readFromStorage(int max)
 
 int main(int argc, char *argv[])
 {
-  int max = 1000000;
-
-  writeToStorage(max);
-  //readFromStorage(max);
+  writeToStorage();
+  //readFromStorage();
 
   return 0;
 }

@@ -1,10 +1,19 @@
 #include "bnljThreads.h"
+#include <atomic>
 
+typedef struct _BUCKET
+{
+  struct _NODE *head;
+  int count;
+  std::atomic<uint> lock;
+} BUCKET;
 //Global variables
 BUCKET *hashTable = NULL;
 TUPLE bufR[DATA_SIZE];
 TUPLE bufS[DATA_SIZE];
 int eachThreadSuccess[THREAD_SIZE];
+static constexpr uint Lockbit = 0x01;
+static constexpr uint Unlockbit = 0x00;
 
 int hashFunction(int key) 
 {
@@ -21,25 +30,43 @@ NODE *createNode(TUPLE tuple)
   return newNode;
 }
 
+bool lockFunction(std::atomic<uint> &bucketLock) {
+  auto lock = bucketLock.load();
+    if (lock == Lockbit) {
+    usleep(1);
+    return false;
+  }
+  return bucketLock.compare_exchange_strong(lock, Lockbit);
+}
+
+void casLock(std::atomic<uint> &bucketLock) {
+  while(true) {
+    if (lockFunction(bucketLock)) break;
+  }
+}
+
+void casUnlock(std::atomic<uint> &bucketLock) {
+  bucketLock.store(Unlockbit);
+}
+
 void insertHash(TUPLE tuple)
 {
   int hashIndex = hashFunction(tuple.key);
   NODE *newNode = createNode(tuple);
-  if (pthread_mutex_lock(&(hashTable[hashIndex].lock)) == 0) {
-    if (hashTable[hashIndex].count == 0)
-    {
-      hashTable[hashIndex].head = newNode;
-      hashTable[hashIndex].count = 1;
-    }
-    //If there are nodes at hashIndex
-    else
-    {
-      newNode->next = hashTable[hashIndex].head;
-      hashTable[hashIndex].head = newNode;
-      hashTable[hashIndex].count += 1;
-    }
-    pthread_mutex_unlock(&(hashTable[hashIndex].lock));
+  casLock(std::ref(hashTable[hashIndex].lock));
+  if (hashTable[hashIndex].count == 0)
+  {
+    hashTable[hashIndex].head = newNode;
+    hashTable[hashIndex].count = 1;
   }
+    //If there are nodes at hashIndex
+  else
+  {
+    newNode->next = hashTable[hashIndex].head;
+    hashTable[hashIndex].head = newNode;
+    hashTable[hashIndex].count += 1;
+  }
+  casUnlock(std::ref(hashTable[hashIndex].lock));
   return;
 }
 
@@ -68,7 +95,7 @@ void printDiff(struct timeval begin, struct timeval end)
 }
 
 void insertWorker(ARG *arg) {
-  printf("thread_id: %d start: %d, end: %d\n", arg -> thread_id, arg -> start, arg -> end);
+  //printf("thread_id: %d start: %d, end: %d\n", arg -> thread_id, arg -> start, arg -> end);
   for (int i = arg -> start; i < arg -> end; i++) {
     insertHash(bufR[i]);
   }
@@ -127,7 +154,6 @@ void initHash() {
   for (int i = 0; i < BUCKET_SIZE; i++) {
     hashTable[i].head = NULL;
     hashTable[i].count = 0;
-    pthread_mutex_init(&(hashTable[i].lock), NULL);
   }
 }
 

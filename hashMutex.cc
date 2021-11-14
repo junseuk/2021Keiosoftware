@@ -75,7 +75,7 @@ void printDiff(struct timeval begin, struct timeval end)
 }
 
 void insertWorker(ARG *arg) {
-  printf("thread_id: %d start: %d, end: %d\n", arg -> thread_id, arg -> start, arg -> end);
+  //printf("thread_id: %d start: %d, end: %d\n", arg -> thread_id, arg -> start, arg -> end);
   for (int i = arg -> start; i < arg -> end; i++) {
     insertHash(bufR[i]);
   }
