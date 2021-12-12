@@ -35,6 +35,13 @@ typedef struct _TEMP
 	int nkey;
 } TEMP;
 
+typedef struct _NEIGHBOR
+{
+	NODE *node;
+	int key;
+	bool isRight;
+} NEIGHBOR;
+
 DATA Head;
 DATA *Tail;
 

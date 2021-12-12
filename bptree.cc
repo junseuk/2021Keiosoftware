@@ -27,7 +27,11 @@ void split(TEMP *tempnode, NODE *original_node);
 void insert(int key, DATA *data);
 void init_root(void);
 int interactive();
-
+void delete_key(int key, DATA *data);
+void delete_entry(NODE *node, int key, DATA *data);
+void delete_operation(NODE *node, int key);
+int howManyChild(NODE *node);
+NEIGHBOR findLeftOrRightNode(NODE *node, int key);
 /* 
 ** test type 1: keys in order
 ** test type 2: keys in reverse order
@@ -355,6 +359,8 @@ void insert(int key, DATA *data)
     TEMP *tempNode = create_temp(leaf, key, (NODE *)data);
     split(tempNode, leaf);
   }
+  // printf("num of Child: %d\n", howManyChild(leaf));
+  // printf("num of Child of root: %d\n", howManyChild(Root));
   return;
 }
 
@@ -371,19 +377,6 @@ int interactive()
   std::cin >> key;
 
   return key;
-}
-
-int main(int argc, char *argv[])
-{
-  struct timeval begin, end;
-
-  init_root();
-
-  begin = cur_time();
-  test(3, 100000000);
-  end = cur_time();
-
-  return 0;
 }
 
 int search(int key)
@@ -445,25 +438,7 @@ void test(int test_type, int num_data)
     {
       num.push_back(i);
     }
-    //For C++98
     random_shuffle(num.begin(), num.end());
-
-    /* Random shuffle when using int array.
-    **
-    ** srand(time(NULL));
-    ** for (i = len - 1; i > 0; i--)
-    ** {
-    **   r = rand() % i;
-    **   temp = num[i];
-    **   num[i] = num[r];
-    **   num[r] = temp;
-    ** }
-    ** for (i = 0; i < len; i++)
-    ** {
-    **   printf("inserting %d\n", num[i]);
-    **   insert(num[i], NULL);
-    ** }
-    */
     for (i = 0; i < len; i++)
     {
       insert(num[i], NULL);
@@ -485,4 +460,121 @@ void test(int test_type, int num_data)
   }
   printf("%d SUCCESS\n", result);
   return;
+}
+
+void delete_operation(NODE *node, int key) {
+  int pos;
+  for (int i = 0; i < N; i++) {
+    if (node -> key[i] == key) {
+      pos = i;
+      node -> key[i] = 0;
+      node -> chi[i] = 0;
+      node -> nkey--;
+      break;
+    }
+  }
+  for (int j = pos; j < node->nkey + 1; j++) {
+    if (j == node->nkey) {
+      node->key[j] = 0;
+      node->chi[j] = 0;
+      break;
+    }
+    node->key[j] = node->key[j+1];
+    node->chi[j] = node->chi[j+1];
+  }
+}
+
+// int howManyChild(NODE *node) {
+//   int numChild = 0;
+//   for (int i = 0; i < N+1; i++) {
+//     if (node->chi[i]) {
+//       printf("%p\n", node->chi[i]);
+//       numChild++;
+//     }
+//   }
+//   return numChild;
+// }
+
+NEIGHBOR findLeftOrRightNode(NODE *node, int key) {
+  NEIGHBOR neighbor;
+  if (node == Root) return neighbor;
+  NODE *parent = node->parent;
+  for(int i = 0; i < N; i++) {
+    if (parent->chi[i] == node && i != N - 1) {
+      neighbor.key = i;
+      neighbor.node = parent -> chi[i+1];
+      neighbor.isRight = true;
+      return neighbor;
+    }
+    else if(parent->chi[i] == node && i == N - 1) {
+      neighbor.key = i - 1;
+      neighbor.node = parent -> chi[i-1];
+      neighbor.isRight = false;
+      return neighbor;
+    }
+  }
+  return neighbor;
+}
+
+void delete_entry(NODE *node, int key, DATA *data) {
+  delete_operation(node, key);
+  if (node == Root && node->nkey == 0) {
+    printf("only child gonna be the new root\n");
+    free(node);
+    return;
+  }
+  else if (node->nkey < N/2 - 1) {
+    printf("%p : lower than minimum keys\n", node);
+    NEIGHBOR neighbor = findLeftOrRightNode(node, key);
+    //Redistribution
+    if (neighbor.node->nkey > N/2 - 1) {
+      if (neighbor.isRight) {
+        printf("RIGHT NEIGHBOR REDISTRIBUTION\n");
+      }
+      else {
+        printf("LEFT NEIGHBOR REDISTRIBUTION\n");
+      }
+    }
+    //Merge
+    else {
+      printf("MERGE\n");
+    }
+  }
+  return;
+}
+
+void delete_key(int key, DATA *data) {
+  NODE *leaf;
+  leaf = find_leaf(Root, key);
+  delete_entry(leaf, key, data);
+}
+
+int main(int argc, char *argv[])
+{
+  struct timeval begin, end;
+
+  init_root();
+  begin = cur_time();
+  //test(3, 100000000);
+  insert(1, NULL);
+  insert(3, NULL);
+  insert(5, NULL);
+  // insert(7, NULL); 
+  // insert(2, NULL); 
+  // insert(8, NULL); 
+  print_tree(Root);
+  delete_key(1, NULL);
+  print_tree(Root);
+  delete_key(3, NULL);
+  print_tree(Root);
+  // while(1) {
+    // insert(interactive(), NULL);
+    // print_tree(Root);
+    // delete_key(interactive(), NULL);
+    // print_tree(Root);
+  // }
+  
+  end = cur_time();
+
+  return 0;
 }
