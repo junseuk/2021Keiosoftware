@@ -484,30 +484,19 @@ void delete_operation(NODE *node, int key) {
   }
 }
 
-// int howManyChild(NODE *node) {
-//   int numChild = 0;
-//   for (int i = 0; i < N+1; i++) {
-//     if (node->chi[i]) {
-//       printf("%p\n", node->chi[i]);
-//       numChild++;
-//     }
-//   }
-//   return numChild;
-// }
-
 NEIGHBOR findLeftOrRightNode(NODE *node, int key) {
   NEIGHBOR neighbor;
   if (node == Root) return neighbor;
   NODE *parent = node->parent;
-  for(int i = 0; i < N; i++) {
-    if (parent->chi[i] == node && i != N - 1) {
-      neighbor.key = i;
+  for(int i = 0; i < parent->nkey+1; i++) {
+    if (parent->chi[i] == node && i != parent->nkey) {
+      neighbor.parentIndex = i;
       neighbor.node = parent -> chi[i+1];
       neighbor.isRight = true;
       return neighbor;
     }
-    else if(parent->chi[i] == node && i == N - 1) {
-      neighbor.key = i - 1;
+    else if(parent->chi[i] == node && i == parent->nkey) {
+      neighbor.parentIndex = i - 1;
       neighbor.node = parent -> chi[i-1];
       neighbor.isRight = false;
       return neighbor;
@@ -526,13 +515,27 @@ void delete_entry(NODE *node, int key, DATA *data) {
   else if (node->nkey < N/2 - 1) {
     printf("%p : lower than minimum keys\n", node);
     NEIGHBOR neighbor = findLeftOrRightNode(node, key);
+    printf("Neighbor node: %p, parentIndex: %d, isRight: %d\n", neighbor.node, neighbor.parentIndex, neighbor.isRight);
     //Redistribution
     if (neighbor.node->nkey > N/2 - 1) {
       if (neighbor.isRight) {
         printf("RIGHT NEIGHBOR REDISTRIBUTION\n");
+        // printf("parent Index: %d\n", node->parent->key[neighbor.parentIndex]);
+        // printf("neighbor Index: %d\n", neighbor.node->key[0]);
+        insert_in_leaf(node, neighbor.node->key[0], (DATA*) neighbor.node->chi[0]);
+        printf("RIGHT NEIGHBOR DELETION\n");
+        delete_operation(neighbor.node, neighbor.node->key[0]);
+        node->parent->key[neighbor.parentIndex] = neighbor.node->key[0];
+        printf("RIGHT REDISTRIBUTION DONE\n");
       }
       else {
         printf("LEFT NEIGHBOR REDISTRIBUTION\n");
+        int i = neighbor.node->nkey - 1;
+        printf("Index: %d\n", i);
+        insert_in_leaf(node, neighbor.node->key[i], (DATA*) neighbor.node->chi[i]);
+        delete_operation(neighbor.node, neighbor.node->key[i]);
+        node->parent->key[neighbor.parentIndex] = node->key[0];
+        printf("LEFT REDISTRIBUTION DONE\n");
       }
     }
     //Merge
@@ -559,13 +562,15 @@ int main(int argc, char *argv[])
   insert(1, NULL);
   insert(3, NULL);
   insert(5, NULL);
-  // insert(7, NULL); 
-  // insert(2, NULL); 
-  // insert(8, NULL); 
+  insert(7, NULL); 
+  insert(2, NULL); 
+  insert(8, NULL); 
   print_tree(Root);
-  delete_key(1, NULL);
+  delete_key(7, NULL);
   print_tree(Root);
-  delete_key(3, NULL);
+  delete_key(8, NULL);
+  print_tree(Root);
+  delete_key(5, NULL);
   print_tree(Root);
   // while(1) {
     // insert(interactive(), NULL);

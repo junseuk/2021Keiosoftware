@@ -38,7 +38,7 @@ typedef struct _TEMP
 typedef struct _NEIGHBOR
 {
 	NODE *node;
-	int key;
+	int parentIndex;
 	bool isRight;
 } NEIGHBOR;
 
