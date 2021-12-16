@@ -464,23 +464,25 @@ void test(int test_type, int num_data)
 
 void delete_operation(NODE *node, int key) {
   int pos;
-  for (int i = 0; i < N; i++) {
-    if (node -> key[i] == key) {
-      pos = i;
-      node -> key[i] = 0;
-      node -> chi[i] = 0;
-      node -> nkey--;
-      break;
+  if (node->isLeaf) {
+    for (int i = 0; i < N; i++) {
+      if (node -> key[i] == key) {
+        pos = i;
+        node -> key[i] = 0;
+        node -> chi[i] = 0;
+        node -> nkey--;
+        break;
+      }
     }
-  }
-  for (int j = pos; j < node->nkey + 1; j++) {
-    if (j == node->nkey) {
-      node->key[j] = 0;
-      node->chi[j] = 0;
-      break;
+    for (int j = pos; j < node->nkey + 1; j++) {
+      if (j == node->nkey) {
+        node->key[j] = 0;
+        node->chi[j] = 0;
+        break;
+      }
+      node->key[j] = node->key[j+1];
+      node->chi[j] = node->chi[j+1];
     }
-    node->key[j] = node->key[j+1];
-    node->chi[j] = node->chi[j+1];
   }
 }
 
@@ -512,35 +514,51 @@ void delete_entry(NODE *node, int key, DATA *data) {
     free(node);
     return;
   }
-  else if (node->nkey < N/2 - 1) {
+  else if (node->nkey < (N-1)/2) {
     printf("%p : lower than minimum keys\n", node);
     NEIGHBOR neighbor = findLeftOrRightNode(node, key);
     printf("Neighbor node: %p, parentIndex: %d, isRight: %d\n", neighbor.node, neighbor.parentIndex, neighbor.isRight);
     //Redistribution
-    if (neighbor.node->nkey > N/2 - 1) {
+    if (neighbor.node->nkey > (N-1)/2) {
       if (neighbor.isRight) {
-        printf("RIGHT NEIGHBOR REDISTRIBUTION\n");
-        // printf("parent Index: %d\n", node->parent->key[neighbor.parentIndex]);
-        // printf("neighbor Index: %d\n", neighbor.node->key[0]);
-        insert_in_leaf(node, neighbor.node->key[0], (DATA*) neighbor.node->chi[0]);
-        printf("RIGHT NEIGHBOR DELETION\n");
-        delete_operation(neighbor.node, neighbor.node->key[0]);
-        node->parent->key[neighbor.parentIndex] = neighbor.node->key[0];
-        printf("RIGHT REDISTRIBUTION DONE\n");
+        if(!node->isLeaf) {
+          printf("INTERNAL RIGHT REDISTRIBUTION\n");
+        }
+        else {
+          printf("RIGHT NEIGHBOR REDISTRIBUTION\n");
+          // printf("parent Index: %d\n", node->parent->key[neighbor.parentIndex]);
+          // printf("neighbor Index: %d\n", neighbor.node->key[0]);
+          insert_in_leaf(node, neighbor.node->key[0], (DATA*) neighbor.node->chi[0]);
+          printf("RIGHT NEIGHBOR DELETION\n");
+          delete_operation(neighbor.node, neighbor.node->key[0]);
+          node->parent->key[neighbor.parentIndex] = neighbor.node->key[0];
+          printf("RIGHT REDISTRIBUTION DONE\n");
+        }
       }
       else {
-        printf("LEFT NEIGHBOR REDISTRIBUTION\n");
-        int i = neighbor.node->nkey - 1;
-        printf("Index: %d\n", i);
-        insert_in_leaf(node, neighbor.node->key[i], (DATA*) neighbor.node->chi[i]);
-        delete_operation(neighbor.node, neighbor.node->key[i]);
-        node->parent->key[neighbor.parentIndex] = node->key[0];
-        printf("LEFT REDISTRIBUTION DONE\n");
+        if(!node->isLeaf) {
+          printf("INTERNAL LEFT REDISTRIBUTION\n");
+        }
+        else {
+          printf("LEFT NEIGHBOR REDISTRIBUTION\n");
+          int i = neighbor.node->nkey - 1;
+          printf("Index: %d\n", i);
+          insert_in_leaf(node, neighbor.node->key[i], (DATA*) neighbor.node->chi[i]);
+          delete_operation(neighbor.node, neighbor.node->key[i]);
+          node->parent->key[neighbor.parentIndex] = node->key[0];
+          printf("LEFT REDISTRIBUTION DONE\n");
+        }
       }
     }
     //Merge
     else {
       printf("MERGE\n");
+      if(!neighbor.isRight) {
+        for(int i = 0; i < neighbor.node->nkey; i++) {
+          insert_in_leaf(node, neighbor.node->key[i], (DATA*) neighbor.node->chi[i]);
+        }
+      }
+      delete_entry(node->parent, node->parent->key[neighbor.parentIndex], (DATA*) node);
     }
   }
   return;
@@ -555,23 +573,41 @@ void delete_key(int key, DATA *data) {
 int main(int argc, char *argv[])
 {
   struct timeval begin, end;
-
   init_root();
   begin = cur_time();
   //test(3, 100000000);
-  insert(1, NULL);
-  insert(3, NULL);
+
+  //internal redistribution test
+  insert(15, NULL);
+  insert(25, NULL);
+  insert(20, NULL);
+  insert(35, NULL);
+  insert(30, NULL);
+  insert(40, NULL);
+  insert(55, NULL);
   insert(5, NULL);
-  insert(7, NULL); 
-  insert(2, NULL); 
-  insert(8, NULL); 
+  insert(45, NULL);
   print_tree(Root);
-  delete_key(7, NULL);
+  delete_key(55, NULL);
+  delete_key(45, NULL);
+  // delete_key(15, NULL);
   print_tree(Root);
-  delete_key(8, NULL);
-  print_tree(Root);
-  delete_key(5, NULL);
-  print_tree(Root);
+  //redistribution test
+  // insert(1, NULL);
+  // insert(3, NULL);
+  // insert(5, NULL);
+  // insert(7, NULL); 
+  // insert(2, NULL); 
+  // insert(8, NULL); 
+  // print_tree(Root);
+  // delete_key(7, NULL);
+  // print_tree(Root);
+  // delete_key(8, NULL);
+  // print_tree(Root);
+  // delete_key(5, NULL);
+  // print_tree(Root);
+
+  //interactive mode
   // while(1) {
     // insert(interactive(), NULL);
     // print_tree(Root);
