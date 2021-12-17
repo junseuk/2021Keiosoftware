@@ -7,9 +7,9 @@
 #include <math.h>
 #include "debug.h"
 #include <iostream>
-using namespace std;
 #define MAX_OBJ (1000 * 1000)
 #define N 3
+using namespace std;
 
 typedef struct _DATA
 {

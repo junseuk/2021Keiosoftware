@@ -13,7 +13,7 @@ typedef struct _TUPLE
 } TUPLE;
 
 #define FILE "R"
-#define DATA_SIZE 10000000
+#define DATA_SIZE 100000
 
 void writeToStorage()
 {

@@ -17,7 +17,7 @@
 #define NB_BUFS (SZ_PAGE * 16 / sizeof(TUPLE))
 #define BUCKET_SIZE 1000000
 #define THREAD_SIZE 1000
-#define DATA_SIZE 10000000
+#define DATA_SIZE 100000
 
 typedef struct _TUPLE
 {
