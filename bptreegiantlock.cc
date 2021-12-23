@@ -15,7 +15,7 @@
 #include <vector>
 #include <time.h>
 
-#define THREAD_SIZE 10000
+#define THREAD_SIZE 1000
 #define DATA_SIZE 10000000
 #define N 4
 
